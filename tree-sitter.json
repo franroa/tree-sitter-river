@@ -1,0 +1,38 @@
+{
+  "$schema": "https://tree-sitter.github.io/tree-sitter/assets/schemas/config.schema.json",
+  "grammars": [
+    {
+      "name": "river",
+      "camelcase": "River",
+      "title": "River",
+      "scope": "source.river",
+      "file-types": [
+        "alloy"
+      ],
+      "injection-regex": "^river$",
+      "class-name": "TreeSitterRiver"
+    }
+  ],
+  "metadata": {
+    "version": "0.1.0",
+    "license": "MIT",
+    "description": "River Grafana language parser",
+    "authors": [
+      {
+        "name": "Francisco"
+      }
+    ],
+    "links": {
+      "repository": "https://github.com/franroa/tree-sitter-river.git"
+    }
+  },
+  "bindings": {
+    "c": true,
+    "go": true,
+    "node": true,
+    "python": true,
+    "rust": true,
+    "swift": true,
+    "zig": false
+  }
+}

@@ -20,10 +20,6 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "literal_value",
           "named": true
         },
@@ -33,6 +29,10 @@
         },
         {
           "type": "operation",
+          "named": true
+        },
+        {
+          "type": "qualified_identifier",
           "named": true
         }
       ]
@@ -59,10 +59,6 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "literal_value",
           "named": true
         },
@@ -72,6 +68,10 @@
         },
         {
           "type": "operation",
+          "named": true
+        },
+        {
+          "type": "qualified_identifier",
           "named": true
         }
       ]
@@ -116,10 +116,6 @@
             "named": true
           },
           {
-            "type": "identifier",
-            "named": true
-          },
-          {
             "type": "literal_value",
             "named": true
           },
@@ -130,6 +126,10 @@
           {
             "type": "operation",
             "named": true
+          },
+          {
+            "type": "qualified_identifier",
+            "named": true
           }
         ]
       }
@@ -138,7 +138,17 @@
   {
     "type": "attribute_key",
     "named": true,
-    "fields": {}
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "identifier_part",
+          "named": true
+        }
+      ]
+    }
   },
   {
     "type": "binary_operation",
@@ -161,10 +171,6 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "literal_value",
           "named": true
         },
@@ -174,6 +180,10 @@
         },
         {
           "type": "operation",
+          "named": true
+        },
+        {
+          "type": "qualified_identifier",
           "named": true
         }
       ]
@@ -208,7 +218,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "qualified_identifier",
             "named": true
           }
         ]
@@ -242,6 +252,7 @@
   {
     "type": "config_file",
     "named": true,
+    "root": true,
     "fields": {},
     "children": {
       "multiple": true,
@@ -263,7 +274,7 @@
         "required": true,
         "types": [
           {
-            "type": "identifier",
+            "type": "qualified_identifier",
             "named": true
           }
         ]
@@ -301,7 +312,42 @@
           "named": true
         },
         {
-          "type": "identifier",
+          "type": "literal_value",
+          "named": true
+        },
+        {
+          "type": "object",
+          "named": true
+        },
+        {
+          "type": "operation",
+          "named": true
+        },
+        {
+          "type": "qualified_identifier",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
+    "type": "interpolated_expression",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": false,
+      "required": true,
+      "types": [
+        {
+          "type": "access",
+          "named": true
+        },
+        {
+          "type": "array",
+          "named": true
+        },
+        {
+          "type": "function_call",
           "named": true
         },
         {
@@ -315,14 +361,29 @@
         {
           "type": "operation",
           "named": true
+        },
+        {
+          "type": "qualified_identifier",
+          "named": true
         }
       ]
     }
   },
   {
-    "type": "identifier",
+    "type": "interpolation",
     "named": true,
-    "fields": {}
+    "fields": {
+      "expression": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "interpolated_expression",
+            "named": true
+          }
+        ]
+      }
+    }
   },
   {
     "type": "label",
@@ -333,7 +394,7 @@
       "required": true,
       "types": [
         {
-          "type": "identifier",
+          "type": "qualified_identifier",
           "named": true
         }
       ]
@@ -407,10 +468,6 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "literal_value",
           "named": true
         },
@@ -424,6 +481,10 @@
         },
         {
           "type": "operation",
+          "named": true
+        },
+        {
+          "type": "qualified_identifier",
           "named": true
         },
         {
@@ -453,6 +514,32 @@
     }
   },
   {
+    "type": "qualified_identifier",
+    "named": true,
+    "fields": {
+      "head": {
+        "multiple": false,
+        "required": true,
+        "types": [
+          {
+            "type": "identifier_part",
+            "named": true
+          }
+        ]
+      },
+      "tail": {
+        "multiple": true,
+        "required": false,
+        "types": [
+          {
+            "type": "identifier_part",
+            "named": true
+          }
+        ]
+      }
+    }
+  },
+  {
     "type": "string_lit",
     "named": true,
     "fields": {},
@@ -462,6 +549,22 @@
       "types": [
         {
           "type": "escape_sequence",
+          "named": true
+        },
+        {
+          "type": "interpolation",
+          "named": true
+        },
+        {
+          "type": "numeric_variable_reference",
+          "named": true
+        },
+        {
+          "type": "string_text",
+          "named": true
+        },
+        {
+          "type": "variable_reference",
           "named": true
         }
       ]
@@ -488,10 +591,6 @@
           "named": true
         },
         {
-          "type": "identifier",
-          "named": true
-        },
-        {
           "type": "literal_value",
           "named": true
         },
@@ -501,6 +600,10 @@
         },
         {
           "type": "operation",
+          "named": true
+        },
+        {
+          "type": "qualified_identifier",
           "named": true
         }
       ]
@@ -516,6 +619,10 @@
   },
   {
     "type": "\"",
+    "named": false
+  },
+  {
+    "type": "${",
     "named": false
   },
   {
@@ -596,7 +703,8 @@
   },
   {
     "type": "comment",
-    "named": true
+    "named": true,
+    "extra": true
   },
   {
     "type": "escape_sequence",
@@ -607,7 +715,15 @@
     "named": false
   },
   {
+    "type": "identifier_part",
+    "named": true
+  },
+  {
     "type": "null_lit",
+    "named": true
+  },
+  {
+    "type": "numeric_variable_reference",
     "named": true
   },
   {
@@ -615,8 +731,16 @@
     "named": true
   },
   {
+    "type": "string_text",
+    "named": true
+  },
+  {
     "type": "true",
     "named": false
+  },
+  {
+    "type": "variable_reference",
+    "named": true
   },
   {
     "type": "{",
