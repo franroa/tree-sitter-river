@@ -29,14 +29,11 @@ module.exports = grammar({
 
     attribute_key: ($) => $.identifier_part,
 
-    // Special case: if key is "regex", parse value as string_lit but do NOT alias/capture "regex"
     attribute: ($) =>
-      choice(
-        seq(
-          field("key", $.attribute_key),
-          "=",
-          field("value", $._expression)
-        )
+      seq(
+        field("key", $.attribute_key),
+        "=",
+        field("value", $._expression)
       ),
 
     _expression: ($) =>
@@ -124,12 +121,22 @@ module.exports = grammar({
     string_text: ($) =>
       token.immediate(prec(1, /([^"\\$]+|\\\$)+/)),
 
+    // ✅ Updated interpolation rule
     interpolation: ($) =>
       seq(
-        token.immediate("${"),
+        field("start", $.interpolation_start),
         field("expression", $.interpolated_expression),
-        token.immediate("}")
+        field("end", $.interpolation_end)
       ),
+
+    interpolation_start: ($) =>
+      seq(
+        alias(token.immediate("$"), $.dollar_sign),
+        alias(token.immediate("{"), $.left_brace)
+      ),
+
+    interpolation_end: ($) =>
+      alias(token.immediate("}"), $.right_brace),
 
     interpolated_expression: ($) => $._expression,
 
