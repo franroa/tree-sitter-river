@@ -1,157 +1,108 @@
-
-; https://git.mzte.de/nvim-plugins/nvim-treesitter/src/branch/master/queries/hcl/highlights.scm
-; https://git.mzte.de/nvim-plugins/nvim-treesitter/src/branch/master/queries/hcl/highlights.scm
-(comment) @comment
-[
-  "-"
-  "!"
-  "!="
-  "*"
-  "/"
-  "&&"
-  "%"
-  "^"
-  "+"
-  "<"
-  "<="
-  "="
-  "=="
-  ">"
-  ">="
-  "||"
-] @operator
-
-; (attribute_key) @variable.attribute
-; (block
-;  name: (identifier) @type)
-; (string_lit) @string
-; (label) @string
-; (function_call
-;  function: (identifier) @function.builtin)
-; queries/highlights.scm
-
-; WORKAROUND for older Tree-sitter versions that don't support '>'
-; Rule for the name of the FIRST TOP-LEVEL block (appearing after any initial comments).
-; This identifier will be captured as @type.first.
-; It will also match the general @type rule below.
-; Themes can then prioritize @type.first if a specific style is defined for it.
+(block      ; Then matches the block node immediately following those comments
+  name: (qualified_identifier) @type) ; @first_block_context is optional for query debugging
 (config_file
   (comment)* ; Matches zero or more comment nodes that might appear first
   (block      ; Then matches the block node immediately following those comments
-    name: (qualified_identifier) @keyword)) ; @first_block_context is optional for query debugging
+    name: (qualified_identifier ) @keyword)) ; @first_block_context is optional for query debugging
+;======================================================================
+; Base Tokens
+;======================================================================
 
-; General rule for all block names (including the first one).
-; If a theme doesn't have a specific style for @type.first,
-; the style for @type would typically apply.
-; (block
-;   name: (identifier) @type)
-;
-
-(block 
-  body: (block_body
-    (block name: (qualified_identifier)) @type))
-
-; (block
-;   body: (block_body
-;     (attribute
-;       value: (identifier) @keyword)))
-
-; Comments
 (comment) @comment
-
-; Literals
-(string_lit) @string
-(escape_sequence) @string.escape ; For escape sequences within strings
+(numeric_lit) @number
 (bool_lit) @boolean
-; (number_lit) @number ; Uncomment and adapt if your grammar has number literals
+(null_lit) @constant.builtin
 
-; Block labels
-(block
-  label: (label (qualified_identifier) @label))
-; (qualified_identifier
-;   head: (identifier_part) @variable.builtin; discovery
-; )
+;======================================================================
+; String Literals and Their Contents
+;======================================================================
 
-(block 
-  name: (qualified_identifier
-    head: (identifier_part) 
-    tail: (identifier_part)) 
-  label: (label 
-    (qualified_identifier 
-      head: (identifier_part) @string)))
-; Attribute Definitions
-; Captures the key of an attribute
+(string_lit) @string
+; (_string_content) @string ; Captures the plain text inside a string
+(escape_sequence) @string.escape
+
+;======================================================================
+; Keywords, Types, and Functions
+;======================================================================
+
+; Highlight function names
+(function_call
+  function: (qualified_identifier) @function)
+
+;======================================================================
+; Attributes, Variables, and Identifiers
+;======================================================================
+
+; Highlight the key of an attribute, e.g., the "job_name" in job_name = "..."
 (attribute
-  key: (attribute_key) @property)
+  key: (identifier) @property)
 
-; Values that are identifiers (e.g., references to other resources, variables, enums)
-; (attribute
-;   value: (qualified_identifier) @variable.builtin)
-;
-; ; Identifiers used as elements within an array
-; (array
-;   (qualified_identifier) @variable.builtin) ; Or @constant if they are immutable references
-
-
-; Values that are identifiers (e.g., references to other resources, variables, enums)
+; For a reference like `discovery.relabel.output`, this highlights
+; the first part as a namespace/variable and subsequent parts as properties.
 (attribute
-  value: (qualified_identifier
-    head: (identifier_part) @variable.builtin.special
-    tail: (identifier_part) @property)) ; e.g., discovery vs the rest
-
-; Identifiers used as elements within an array
+  (qualified_identifier
+    (identifier) @namespace
+    "."
+    (identifier) @property))
 (array
   (qualified_identifier
-    head: (identifier_part) @variable.builtin.special
-    tail: (identifier_part) @property)) ; optional: @constant if they are immutable
+    (identifier) @namespace
+    "."
+    (identifier) @property))
+
+; Highlight identifiers when they are used as values
+(attribute
+  value: (qualified_identifier) @keyword)
+
+(array
+  (qualified_identifier) @keyword)
+
+; Highlight the special label string for a block
+(block
+  label: (label) @string)
+
+;======================================================================
+; Punctuation and Operators
+;======================================================================
+
+[
+  "[" "]"
+  "{" "}"
+  "(" ")"
+] @punctuation.bracket
+
+[
+  "."
+  ","
+] @punctuation.delimiter
+
+[
+  "-" "!" "!="
+  "*" "/" "%" "^"
+  "+" "<" "<="
+  "=" "==" ">" ">="
+  "||" "&&"
+] @operator
 
 
-(interpolation "${" @punctuation.special
-               "}" @punctuation.special)
+;======================================================================
+; String Interpolation
+;======================================================================
 
-(interpolation 
-  expression: (interpolated_expression 
-    (qualified_identifier 
-      head: (identifier_part) @punctuation.special )))
+; Highlight the interpolation markers `${` and `}`
+(interpolation
+  "${" @punctuation.special
+  "}" @punctuation.special) @embedded
 
+; Highlight the expression inside an interpolation block as a variable
+(interpolation
+  (_expression) @variable)
 
-(string_text) @string
+; Highlight the qualified_identifier inside an interpolation as a type.
+; This is the specific rule you requested.
+(interpolation
+  (qualified_identifier (identifier) @punctuation.special))
 
-
-
-; --- Optional: Highlighting Punctuation and Operators ---
-(attribute "=" @operator)
-(object_assignment "=" @operator)
-"[" @punctuation.bracket
-"]" @punctuation.bracket
-"{" @punctuation.bracket
-"}" @punctuation.bracket
-"," @punctuation.delimiter
-
-
-; --- Developer Notes ---
-; 1.  Workaround for 'First Block': The query targeting `@type.first` has been modified
-;     to avoid the '>' direct child combinator. It now looks for the first `block`
-;     child of `config_file`, potentially after any `comment` nodes.
-; 2.  Theme Dependency: Your editor's theme needs to define a style for `@type.first`
-;     for it to appear differently.
-; 3.  Update Tree-sitter: It's still recommended to update your Tree-sitter environmentçç
-;
-;
-;
-; Interpolations like ${foo}
-(interpolation) @macro
-
-; Named variables like $metric
-(variable_reference) @variable.builtin
-
-; Numeric variables like $1, $2
-(numeric_variable_reference) @constant.builtin
-
-; Text inside strings
-(string_text) @string
-
-; Escape sequences in strings
-(escape_sequence) @escape
-
-; (regex_lit) @string
+; Fallback for any other expression inside an interpolation, highlighting it as a variable.
+(interpolation
+  (_expression) @variable)

@@ -1,174 +1,162 @@
-module.exports = grammar({
-  name: "river",
-
-  extras: ($) => [$.comment, $._whitespace],
-
-  rules: {
-    config_file: ($) => repeat($.block),
-
-    block: ($) =>
-      seq(
-        field("name", $.qualified_identifier),
-        field("label", optional($.label)),
-        field("body", $.block_body)
-      ),
-
-    label: ($) => seq('"', $.qualified_identifier, '"'),
-
-    block_body: ($) => seq("{", repeat(choice($.attribute, $.block)), "}"),
-
-    object_identifier: ($) => /([\p{ID_Continue}_]*)/,
-
-    qualified_identifier: ($) =>
-      seq(
-        field("head", $.identifier_part),
-        repeat(seq(".", field("tail", $.identifier_part)))
-      ),
-
-    identifier_part: ($) => /(\p{ID_Start}[\p{ID_Continue}_]*)/,
-
-    attribute_key: ($) => $.identifier_part,
-
-    attribute: ($) =>
-      seq(
-        field("key", $.attribute_key),
-        "=",
-        field("value", $._expression)
-      ),
-
-    _expression: ($) =>
-      choice(
-        $.literal_value,
-        $.array,
-        $.object,
-        $.qualified_identifier,
-        $.function_call,
-        $.operation,
-        $.access,
-        seq("(", $._expression, ")")
-      ),
-
-    literal_value: ($) =>
-      choice($.numeric_lit, $.bool_lit, $.null_lit, $.string_lit),
-
-    operation: ($) => choice($.unary_operation, $.binary_operation),
-
-    unary_operation: ($) => prec.left(1, seq(choice("-", "!"), $._expression)),
-
-    binary_operation: ($) => {
-      const table = [
-        [6, choice("*", "/", "%", "^")],
-        [5, choice("+", "-")],
-        [4, choice(">", ">=", "<", "<=")],
-        [3, choice("==", "!=")],
-        [2, choice("&&")],
-        [1, choice("||")],
-      ];
-
-      return choice(
-        ...table.map(([precedence, operator]) =>
-          prec.left(precedence, seq($._expression, operator, $._expression))
-        )
-      );
-    },
-
-    array: ($) => seq("[", optional($._array_elems), "]"),
-
-    _array_elems: ($) =>
-      seq($._expression, repeat(seq(",", $._expression)), optional(",")),
-
-    object: ($) =>
-      seq("{", repeat(seq($.object_assignment, optional(","))), "}"),
-
-    object_assignment: ($) =>
-      seq(choice($.string_lit, $.object_identifier), "=", $._expression),
-
-    access: ($) => seq($.qualified_identifier, "[", $._expression, "]"),
-
-    function_call: ($) =>
-      seq(
-        field("function", $.qualified_identifier),
-        "(",
-        field("params", optional($.function_params)),
-        ")"
-      ),
-
-    function_params: ($) =>
-      seq($._expression, repeat(seq(",", $._expression))),
-
-    numeric_lit: ($) =>
-      choice(/[0-9]+(\.[0-9]+)?/, /[0-9]+([eE][\+-]?[0-9]+)?/, /0x[0-9a-fA-F]+/),
-
-    bool_lit: ($) => choice("true", "false"),
-
-    null_lit: ($) => "null",
-
-    string_lit: ($) =>
-      seq(
-        '"',
-        repeat(
-          choice(
-            $.string_text,
-            $.escape_sequence,
-            $.interpolation,
-            $.numeric_variable_reference,
-            $.variable_reference
-          )
-        ),
-        '"'
-      ),
-
-    string_text: ($) =>
-      token.immediate(prec(1, /([^"\\$]+|\\\$)+/)),
-
-    // ✅ Updated interpolation rule
-    interpolation: ($) =>
-      seq(
-        field("start", $.interpolation_start),
-        field("expression", $.interpolated_expression),
-        field("end", $.interpolation_end)
-      ),
-
-    interpolation_start: ($) =>
-      seq(
-        alias(token.immediate("$"), $.dollar_sign),
-        alias(token.immediate("{"), $.left_brace)
-      ),
-
-    interpolation_end: ($) =>
-      alias(token.immediate("}"), $.right_brace),
-
-    interpolated_expression: ($) => $._expression,
-
-    variable_reference: ($) =>
-      token.immediate(seq("$", /[a-zA-Z_][a-zA-Z0-9_]*/)),
-
-    numeric_variable_reference: ($) =>
-      token.immediate(seq("$", /[0-9]+/)),
-
-    escape_sequence: ($) =>
-      token.immediate(
-        seq(
-          "\\",
-          choice(
-            /[^xuU]/,
-            /\d{2,3}/,
-            /x[0-9a-fA-F]{2}/,
-            /u[0-9a-fA-F]{4}/,
-            /U[0-9a-fA-F]{8}/
-          )
-        )
-      ),
-
-    comment: ($) =>
-      token(
-        choice(
-          seq("#", /.*/),
-          seq("//", /.*/),
-          seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/")
-        )
-      ),
-
-    _whitespace: ($) => token(/\s/),
-  },
-});
+module.exports = grammar({
+  name: "river",
+
+  extras: ($) => [$.comment, /\s/],
+
+  supertypes: $ => [
+    $._expression,
+    $.literal_value,
+  ],
+
+  rules: {
+    // Top-level file rule (normal files)
+    config_file: ($) => repeat($.block),
+
+    // Injection entrypoint (parsing raw code inside YAML string scalars)
+    injected_content: ($) => repeat(choice($.block, $.attribute)),
+
+    block: ($) =>
+      seq(
+        field("name", $.qualified_identifier),
+        field("label", optional(alias($.string_lit, $.label))),
+        field("body", $.block_body)
+      ),
+
+    block_body: ($) => seq("{", repeat(choice($.attribute, $.block)), "}"),
+
+    attribute: ($) =>
+      seq(
+        field("key", $.identifier),
+        "=",
+        field("value", $._expression)
+      ),
+
+    _expression: ($) =>
+      choice(
+        $.literal_value,
+        $.array,
+        $.object,
+        $.qualified_identifier,
+        $.function_call,
+        $.operation,
+        $.access,
+        $.parenthesized_expression
+      ),
+
+    parenthesized_expression: $ => seq('(', $._expression, ')'),
+
+    literal_value: ($) =>
+      choice($.numeric_lit, $.bool_lit, $.null_lit, $.string_lit),
+
+    operation: ($) => choice($.unary_operation, $.binary_operation),
+
+    unary_operation: ($) => prec(7, seq(choice("-", "!"), $._expression)),
+
+    binary_operation: ($) => {
+      const table = [
+        [6, choice("*", "/", "%")],
+        [5, choice("+", "-")],
+        [4, choice("==", "!=", "<", "<=", ">", ">=")],
+        [3, "&&"],
+        [2, "||"],
+        [1, "^"],
+      ];
+      return choice(
+        ...table.map(([precedence, operator]) =>
+          prec.left(precedence, seq(
+            field('left', $._expression),
+            operator,
+            field('right', $._expression)
+          ))
+        )
+      );
+    },
+
+    array: ($) => seq("[", optional(sepBy(",", $._expression)), optional(","), "]"),
+
+    object: ($) => seq("{", optional(sepBy(",", $.object_assignment)), optional(","), "}"),
+
+    object_assignment: ($) =>
+      seq(
+        field('key', choice($.identifier, $.string_lit)),
+        "=",
+        field('value', $._expression)
+      ),
+
+    access: ($) => seq($._expression, "[", $._expression, "]"),
+
+    function_call: ($) =>
+      seq(
+        field("function", $.qualified_identifier),
+        "(",
+        field("arguments", optional(sepBy(",", $._expression))),
+        ")"
+      ),
+
+    string_lit: $ => seq(
+      '"',
+      repeat(choice(
+        $.interpolation,
+        $.escape_sequence,
+        $._string_content
+      )),
+      '"'
+    ),
+
+    interpolation: $ => prec(1, seq(
+      '${',
+      $._expression,
+      '}'
+    )),
+
+    escape_sequence: $ => token.immediate(/\\./),
+
+    _string_content: $ => token.immediate(
+      /[^"\\$]+|\\\$|\$|./
+    ),
+
+    identifier: ($) => /[\p{ID_Start}_][\p{ID_Continue}_]*/,
+
+    qualified_identifier: ($) => sepBy1('.', $.identifier),
+
+    numeric_lit: $ => token(choice(
+      /0x[0-9a-fA-F]+/,
+      /[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?/
+    )),
+
+    bool_lit: ($) => choice("true", "false"),
+    null_lit: ($) => "null",
+
+    comment: ($) =>
+      token(
+        choice(
+          seq("#", /.*/),
+          seq("//", /.*/),
+          seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/")
+        )
+      ),
+
+    _whitespace: ($) => token(/\s/),
+  },
+});
+
+/**
+ * Creates a rule to match one or more occurrences of a rule separated by a separator.
+ * @param {RuleOrLiteral} separator 
+ * @param {RuleOrLiteral} rule 
+ * @returns {SeqRule}
+ */
+function sepBy1(separator, rule) {
+  return seq(rule, repeat(seq(separator, rule)));
+}
+
+/**
+ * Creates a rule to match zero or more occurrences of a rule separated by a separator.
+ * @param {RuleOrLiteral} separator 
+ * @param {RuleOrLiteral} rule 
+ * @returns {Rule}
+ */
+function sepBy(separator, rule) {
+  return optional(sepBy1(separator, rule));
+}
+
