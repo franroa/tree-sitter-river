@@ -92,28 +92,51 @@ module.exports = grammar({
         field("arguments", optional(sepBy(",", $._expression))),
         ")"
       ),
+    
+    // --- CAMBIOS REALIZADOS ---
 
-    string_lit: $ => seq(
+    // 1. `string_lit` ahora elige entre los dos tipos de comillas.
+    string_lit: $ => choice(
+      $.double_quoted_string,
+      $.single_quoted_string
+    ),
+
+    // 2. La lógica de comillas dobles es una COPIA EXACTA de tu implementación original.
+    //    He creado una nueva regla para ella sin tocar su contenido.
+    double_quoted_string: $ => seq(
       '"',
       repeat(choice(
         $.interpolation,
         $.escape_sequence,
-        $._string_content
+        $._string_content // Se reutiliza tu regla original _string_content
       )),
       '"'
     ),
 
+    // 3. Tu lógica original para el contenido y escapes de comillas dobles, SIN CAMBIOS.
     interpolation: $ => prec(1, seq(
       '${',
       $._expression,
       '}'
     )),
-
     escape_sequence: $ => token.immediate(/\\./),
-
     _string_content: $ => token.immediate(
       /[^"\\$]+|\\\$|\$|./
     ),
+
+    // 4. Se añade el soporte para comillas simples de forma completamente nueva y separada.
+    single_quoted_string: $ => seq(
+      "'",
+      repeat(choice(
+        $._single_quote_escape_sequence,
+        $._single_quote_string_content
+      )),
+      "'"
+    ),
+    _single_quote_escape_sequence: $ => token.immediate(/\\['\\]/),
+    _single_quote_string_content: $ => token.immediate(/[^'\\]+/),
+
+    // --- FIN DE LOS CAMBIOS ---
 
     identifier: ($) => /[\p{ID_Start}_][\p{ID_Continue}_]*/,
 
@@ -140,23 +163,10 @@ module.exports = grammar({
   },
 });
 
-/**
- * Creates a rule to match one or more occurrences of a rule separated by a separator.
- * @param {RuleOrLiteral} separator 
- * @param {RuleOrLiteral} rule 
- * @returns {SeqRule}
- */
 function sepBy1(separator, rule) {
   return seq(rule, repeat(seq(separator, rule)));
 }
 
-/**
- * Creates a rule to match zero or more occurrences of a rule separated by a separator.
- * @param {RuleOrLiteral} separator 
- * @param {RuleOrLiteral} rule 
- * @returns {Rule}
- */
 function sepBy(separator, rule) {
   return optional(sepBy1(separator, rule));
 }
-

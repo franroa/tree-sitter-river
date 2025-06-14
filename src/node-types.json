@@ -218,6 +218,25 @@
     }
   },
   {
+    "type": "double_quoted_string",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        },
+        {
+          "type": "interpolation",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "function_call",
     "named": true,
     "fields": {
@@ -267,15 +286,15 @@
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
-      "required": false,
+      "multiple": false,
+      "required": true,
       "types": [
         {
-          "type": "escape_sequence",
+          "type": "double_quoted_string",
           "named": true
         },
         {
-          "type": "interpolation",
+          "type": "single_quoted_string",
           "named": true
         }
       ]
@@ -376,19 +395,24 @@
     }
   },
   {
+    "type": "single_quoted_string",
+    "named": true,
+    "fields": {}
+  },
+  {
     "type": "string_lit",
     "named": true,
     "fields": {},
     "children": {
-      "multiple": true,
-      "required": false,
+      "multiple": false,
+      "required": true,
       "types": [
         {
-          "type": "escape_sequence",
+          "type": "double_quoted_string",
           "named": true
         },
         {
-          "type": "interpolation",
+          "type": "single_quoted_string",
           "named": true
         }
       ]
@@ -431,6 +455,10 @@
   },
   {
     "type": "&&",
+    "named": false
+  },
+  {
+    "type": "'",
     "named": false
   },
   {
