@@ -3,10 +3,7 @@ module.exports = grammar({
 
   extras: ($) => [$.comment, /\s/],
 
-  supertypes: $ => [
-    $._expression,
-    $.literal_value,
-  ],
+  supertypes: ($) => [$._expression, $.literal_value],
 
   rules: {
     // Top-level file rule (normal files)
@@ -19,17 +16,13 @@ module.exports = grammar({
       seq(
         field("name", $.qualified_identifier),
         field("label", optional(alias($.string_lit, $.label))),
-        field("body", $.block_body)
+        field("body", $.block_body),
       ),
 
     block_body: ($) => seq("{", repeat(choice($.attribute, $.block)), "}"),
 
     attribute: ($) =>
-      seq(
-        field("key", $.identifier),
-        "=",
-        field("value", $._expression)
-      ),
+      seq(field("key", $.identifier), "=", field("value", $._expression)),
 
     _expression: ($) =>
       choice(
@@ -40,10 +33,10 @@ module.exports = grammar({
         $.function_call,
         $.operation,
         $.access,
-        $.parenthesized_expression
+        $.parenthesized_expression,
       ),
 
-    parenthesized_expression: $ => seq('(', $._expression, ')'),
+    parenthesized_expression: ($) => seq("(", $._expression, ")"),
 
     literal_value: ($) =>
       choice($.numeric_lit, $.bool_lit, $.null_lit, $.string_lit),
@@ -63,24 +56,29 @@ module.exports = grammar({
       ];
       return choice(
         ...table.map(([precedence, operator]) =>
-          prec.left(precedence, seq(
-            field('left', $._expression),
-            operator,
-            field('right', $._expression)
-          ))
-        )
+          prec.left(
+            precedence,
+            seq(
+              field("left", $._expression),
+              operator,
+              field("right", $._expression),
+            ),
+          ),
+        ),
       );
     },
 
-    array: ($) => seq("[", optional(sepBy(",", $._expression)), optional(","), "]"),
+    array: ($) =>
+      seq("[", optional(sepBy(",", $._expression)), optional(","), "]"),
 
-    object: ($) => seq("{", optional(sepBy(",", $.object_assignment)), optional(","), "}"),
+    object: ($) =>
+      seq("{", optional(sepBy(",", $.object_assignment)), optional(","), "}"),
 
     object_assignment: ($) =>
       seq(
-        field('key', choice($.identifier, $.string_lit)),
+        field("key", choice($.identifier, $.string_lit)),
         "=",
-        field('value', $._expression)
+        field("value", $._expression),
       ),
 
     access: ($) => seq($._expression, "[", $._expression, "]"),
@@ -90,62 +88,63 @@ module.exports = grammar({
         field("function", $.qualified_identifier),
         "(",
         field("arguments", optional(sepBy(",", $._expression))),
-        ")"
+        ")",
       ),
-    
-    // --- CAMBIOS REALIZADOS ---
 
-    // 1. `string_lit` ahora elige entre los dos tipos de comillas.
-    string_lit: $ => choice(
-      $.double_quoted_string,
-      $.single_quoted_string
-    ),
+    // --- STRING DEFINITIONS ---
 
-    // 2. La lógica de comillas dobles es una COPIA EXACTA de tu implementación original.
-    //    He creado una nueva regla para ella sin tocar su contenido.
-    double_quoted_string: $ => seq(
-      '"',
-      repeat(choice(
-        $.interpolation,
-        $.escape_sequence,
-        $._string_content // Se reutiliza tu regla original _string_content
-      )),
-      '"'
-    ),
+    string_lit: ($) =>
+      choice(
+        $.double_quoted_string,
+        $.single_quoted_string,
+        $.backticked_string,
+      ),
 
-    // 3. Tu lógica original para el contenido y escapes de comillas dobles, SIN CAMBIOS.
-    interpolation: $ => prec(1, seq(
-      '${',
-      $._expression,
-      '}'
-    )),
-    escape_sequence: $ => token.immediate(/\\./),
-    _string_content: $ => token.immediate(
-      /[^"\\$]+|\\\$|\$|./
-    ),
+    double_quoted_string: ($) =>
+      seq(
+        '"',
+        repeat(choice($.interpolation, $.escape_sequence, $._string_content)),
+        '"',
+      ),
 
-    // 4. Se añade el soporte para comillas simples de forma completamente nueva y separada.
-    single_quoted_string: $ => seq(
-      "'",
-      repeat(choice(
-        $._single_quote_escape_sequence,
-        $._single_quote_string_content
-      )),
-      "'"
-    ),
-    _single_quote_escape_sequence: $ => token.immediate(/\\['\\]/),
-    _single_quote_string_content: $ => token.immediate(/[^'\\]+/),
+    interpolation: ($) => prec(1, seq("${", $._expression, "}")),
 
-    // --- FIN DE LOS CAMBIOS ---
+    _string_content: ($) => token.immediate(/[^"\\$]+|\\\$|\$|./),
+
+    single_quoted_string: ($) =>
+      seq(
+        "'",
+        repeat(
+          choice(
+            $._single_quote_escape_sequence,
+            $._single_quote_string_content,
+          ),
+        ),
+        "'",
+      ),
+    _single_quote_escape_sequence: ($) => token.immediate(/\\['\\]/),
+    _single_quote_string_content: ($) => token.immediate(/[^'\\]+/),
+
+    backticked_string: ($) =>
+      seq(
+        "`",
+        repeat(choice($.escape_sequence, $._backtick_string_content)),
+        "`",
+      ),
+
+    _backtick_string_content: ($) => token.immediate(/[^`\\]+/),
+
+    // Generic escape sequence used by double-quoted and backticked strings
+    escape_sequence: ($) => token.immediate(/\\./),
+
+    // --- IDENTIFIERS AND LITERALS ---
 
     identifier: ($) => /[\p{ID_Start}_][\p{ID_Continue}_]*/,
 
-    qualified_identifier: ($) => sepBy1('.', $.identifier),
+    qualified_identifier: ($) => sepBy1(".", $.identifier),
 
-    numeric_lit: $ => token(choice(
-      /0x[0-9a-fA-F]+/,
-      /[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?/
-    )),
+    numeric_lit: ($) =>
+      token(choice(/0x[0-9a-fA-F]+/, /[0-9]+(\.[0-9]*)?([eE][+-]?[0-9]+)?/)),
 
     bool_lit: ($) => choice("true", "false"),
     null_lit: ($) => "null",
@@ -155,8 +154,8 @@ module.exports = grammar({
         choice(
           seq("#", /.*/),
           seq("//", /.*/),
-          seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/")
-        )
+          seq("/*", /[^*]*\*+([^/*][^*]*\*+)*/, "/"),
+        ),
       ),
 
     _whitespace: ($) => token(/\s/),

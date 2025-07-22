@@ -724,6 +724,10 @@
         {
           "type": "SYMBOL",
           "name": "single_quoted_string"
+        },
+        {
+          "type": "SYMBOL",
+          "name": "backticked_string"
         }
       ]
     },
@@ -781,13 +785,6 @@
         ]
       }
     },
-    "escape_sequence": {
-      "type": "IMMEDIATE_TOKEN",
-      "content": {
-        "type": "PATTERN",
-        "value": "\\\\."
-      }
-    },
     "_string_content": {
       "type": "IMMEDIATE_TOKEN",
       "content": {
@@ -836,6 +833,49 @@
       "content": {
         "type": "PATTERN",
         "value": "[^'\\\\]+"
+      }
+    },
+    "backticked_string": {
+      "type": "SEQ",
+      "members": [
+        {
+          "type": "STRING",
+          "value": "`"
+        },
+        {
+          "type": "REPEAT",
+          "content": {
+            "type": "CHOICE",
+            "members": [
+              {
+                "type": "SYMBOL",
+                "name": "escape_sequence"
+              },
+              {
+                "type": "SYMBOL",
+                "name": "_backtick_string_content"
+              }
+            ]
+          }
+        },
+        {
+          "type": "STRING",
+          "value": "`"
+        }
+      ]
+    },
+    "_backtick_string_content": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "[^`\\\\]+"
+      }
+    },
+    "escape_sequence": {
+      "type": "IMMEDIATE_TOKEN",
+      "content": {
+        "type": "PATTERN",
+        "value": "\\\\."
       }
     },
     "identifier": {

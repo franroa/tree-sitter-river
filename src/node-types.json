@@ -116,6 +116,21 @@
     }
   },
   {
+    "type": "backticked_string",
+    "named": true,
+    "fields": {},
+    "children": {
+      "multiple": true,
+      "required": false,
+      "types": [
+        {
+          "type": "escape_sequence",
+          "named": true
+        }
+      ]
+    }
+  },
+  {
     "type": "binary_operation",
     "named": true,
     "fields": {
@@ -290,6 +305,10 @@
       "required": true,
       "types": [
         {
+          "type": "backticked_string",
+          "named": true
+        },
+        {
           "type": "double_quoted_string",
           "named": true
         },
@@ -407,6 +426,10 @@
       "multiple": false,
       "required": true,
       "types": [
+        {
+          "type": "backticked_string",
+          "named": true
+        },
         {
           "type": "double_quoted_string",
           "named": true
@@ -527,6 +550,10 @@
   },
   {
     "type": "^",
+    "named": false
+  },
+  {
+    "type": "`",
     "named": false
   },
   {
